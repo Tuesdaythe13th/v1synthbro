@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as Tone from 'tone';
@@ -36,98 +34,33 @@ interface KnobProps {
   color?: keyof typeof COLOR_CLASSES;
 }
 
-const Knob: React.FC<KnobProps> = ({ 
-  label, 
-  min = 0, 
-  max = 100, 
-  defaultValue = 50, 
-  onChange = (value: number) => {},
-  color = 'green'
-}) => {
-  const [value, setValue] = useState(defaultValue);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [startValue, setStartValue] = useState(0);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartY(e.clientY);
-    setStartValue(value);
-  }, [value]);
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return;
-    
-    const deltaY = startY - e.clientY;
-    const deltaValue = (deltaY / 200) * (max - min);
-    const newValue = Math.max(min, Math.min(max, startValue + deltaValue));
-    
-    setValue(newValue);
-    onChange(newValue);
-  }, [isDragging, startY, startValue, min, max, onChange]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
-
-  // Calculate rotation
-  const rotation = ((value - min) / (max - min)) * 270 - 135;
-
+const Knob = ({ value, onChange, label, min = 0, max = 100, color = 'green' }) => {
   return (
-    <div className="flex flex-col items-center">
-      <div 
-        className={`w-20 h-20 rounded-full bg-gray-800 shadow-inner 
-          border-2 border-gray-700 relative cursor-pointer transition-all duration-150
-          ${isDragging ? `border-${COLOR_CLASSES[color]} shadow-lg shadow-${COLOR_CLASSES[color]}/30` : ''}`}
-        onMouseDown={handleMouseDown}
-        role="slider"
-        aria-label={label}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={Math.round(value)}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowUp') {
-            const newVal = Math.min(max, value + 1);
-            setValue(newVal);
-            onChange(newVal);
-          } else if (e.key === 'ArrowDown') {
-            const newVal = Math.max(min, value - 1);
-            setValue(newVal);
-            onChange(newVal);
-          }
-        }}
-      >
-        <div 
-          className={`w-2 h-10 bg-gradient-to-b from-${COLOR_CLASSES[color]} to-${color}-600 rounded-full 
-            absolute bottom-[18px] left-1/2 origin-bottom transform -translate-x-1/2 transition-transform duration-150`}
-          style={{ 
-            transform: `translateX(-50%) rotate(${rotation}deg)`,
+    <div className="flex flex-col items-center gap-2">
+      <div className="w-16 h-16 rounded-full relative"
+           style={{
+             background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+             boxShadow: '3px 3px 5px rgba(0,0,0,0.5), -3px -3px 5px rgba(255,255,255,0.05)',
+             border: `1px solid rgba(0, 255, 0, 0.2)`
+           }}>
+        <div
+          className="absolute w-1 h-8"
+          style={{
+            backgroundColor: `var(--${color})`,
+            left: '50%',
+            bottom: '50%',
+            transformOrigin: 'bottom center',
+            transform: `translateX(-50%) rotate(${((value - min) / (max - min)) * 270 - 135}deg)`,
+            borderRadius: '1px',
+            boxShadow: `0 0 5px var(--${color})`
           }}
         />
-        <div className="absolute inset-[2px] rounded-full bg-gray-900 opacity-20" />
       </div>
-      <div className="mt-2 text-center">
-        <span className={`text-${COLOR_CLASSES[color]} text-xs font-medium`}>{label}</span>
-        <span className="font-kode text-white text-lg font-bold mt-1 
-          drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] tracking-wider">
-          {Math.round(value)}
-        </span>
-      </div>
+      <div className={`text-${color}-500 text-sm font-medium`}>{label}</div>
+      <div className={`text-${color}-500/80 text-xs`}>{value}</div>
     </div>
-  );
-};
+  )
+}
 
 // PianoKey Component with improved accessibility and styling
 interface PianoKeyProps {
@@ -600,13 +533,15 @@ export default function SYNTHBRO() {
             <div className="flex justify-around flex-wrap">
               <Knob 
                 label="Volume" 
+                value={volume}
                 onChange={(value) => synth?.set({ volume: Tone.gainToDb(value / 100) })} 
+                color="green"
               />
               <Knob 
                 label="Detune" 
                 min={-100} 
                 max={100} 
-                defaultValue={0}
+                value={detune}
                 onChange={(value) => synth?.set({ detune: value })}
                 color="blue"
               />
@@ -615,7 +550,7 @@ export default function SYNTHBRO() {
                 min={0}
                 max={1}
                 step={0.01}
-                defaultValue={0}
+                value={portamento}
                 onChange={(value) => synth?.set({ portamento: value })}
                 color="purple"
               />
